@@ -282,20 +282,43 @@ bash scripts/compare3.sh
 
 ---
 
-## 부록: trace-augmentation 실험 (RTX 4070 Ti Super, 별도 머신)
+## 부록: trace-augmentation (별도 머신, RTX 4070 Ti Super)
 
-두 번째 머신(RTX 4070 Ti Super)에서 진행한 **후처리 기법 추가 검증**. 상세: [`TRACE_AUG_rtx4070.md`](TRACE_AUG_rtx4070.md), 스크립트 `scripts/trace_aug/`, 수치 `results/trace_aug_results.txt`.
+본편(RTX 5070 Ti)의 "후처리로 작은 모델을 키울 수 있는가" 질문을 두 번째 머신에서 **한 축 더** 검증함. 여기서 시도한 후처리는 **trace-augmentation** — SmolVLA 에 "미래 2D 궤적(point-trace) 예측"을 보조 손실로 추가해 dynamics 감각을 주입하는 방식 (거대 world-model 없이 ATM/MolmoAct 의 trace 아이디어만 경량화).
 
-**가설**: SmolVLA에 "미래 2D 궤적(point-trace) 예측"을 보조 목적으로 학습시키면(거대 world-model 없이 dynamics 감각 주입 = ATM/MolmoAct trace의 경량판) 성능/일반화가 오르는가. trace 라벨은 CoTracker3로 생성, action expert 특징에 보조 헤드 부착.
+- 라벨: **CoTracker3** 로 agentview 영상에서 100점 격자의 미래 궤적 추출
+- 부착: SmolVLA action expert 특징(`action_out_proj` 입력) → 미래 16 frame trace 예측 헤드
+- 학습: expert-only, 12k step, `libero_spatial` 432 episode. `trace_weight=1` 이 treatment, `0` 이 control (동일 설정 매칭 비교)
 
-**결과** (libero_spatial, n=100):
+### 결과 (`libero_spatial`, 100 episode)
 
-| 모델 | in-dist | OOD(init_states shift) |
-|---|---:|---:|
-| trace_aug (expert-only + trace, 12k) | 49% | 46% |
-| control (expert-only, no-trace, 12k) | 50% | 49% |
-| **Δ (trace − control)** | **−1%p** | **−3%p** |
+| 조건 | trace-aug | control | Δ |
+|---|---:|---:|---:|
+| in-distribution | 49 % | 50 % | **−1 %p** |
+| OOD (init state 이동) | 46 % | 49 % | **−3 %p** |
 
-**결론**: 이 셋업(오프라인·12k·spatial·단일 시드)에선 **trace 후처리 효과 미검출**(n=100 노이즈 내). → 이 repo의 핵심 결론 *"후처리 기법보다 모델 선택이 중요"* 를 한 번 더 보강. 오프라인 trace는 covariate shift(오차누적)를 근본적으로 못 잡음이 원인으로 보이며, 진짜 검증엔 on-policy(DAgger+trace)/강한 OOD/다중 시드가 필요.
+같은 조건 n=300 재평가에서도 in-dist 는 **47.0 % vs 48.3 %** (Δ −1.3 %p) 로 동일함.
 
-(재현 시 실제로 겪은 버그 5개 — itertools.cycle RAM 누수, 고아 프로세스 OOM, train_expert_only=false로 VLM 파괴, trace 부착 위치, **postprocessor_overrides 누락으로 인한 eval 전면 0%** — 은 `TRACE_AUG_rtx4070.md` 참고.)
+- **trace 후처리 효과 미검출.** 두 조건 모두 trace-aug 가 control 을 넘지 못함
+- 차이는 전부 n=100 표본 노이즈(SE ±5 %p) 안 → 통계적으로 0 과 구분되지 않음
+- 참고선: `smolvla_libero`(공식) 66 %, lerobot 표준 재현(20k) 58 %
+
+→ 본편 결론 **"후처리 기법보다 모델 선택이 중요"** 를 한 번 더 지지함.
+
+### 왜 안 나왔나 (추정)
+
+- 이 trace 는 **오프라인**이라 covariate shift(오차 누적)를 근본적으로 못 잡음 — 오프라인 증류가 큰 이득을 못 준 본편 결과와 같은 맥락
+- CoTracker 격자점은 "의미 있는 계획"이 아니라 기하학적 점이라 신호가 약했을 수 있음
+- 진짜 검증에는 **on-policy(DAgger+trace) · 강한 OOD(LIBERO-Plus / 교차 suite) · 다중 시드**가 필요
+
+### 재현 시 겪은 버그 5개
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| 학습 중 RAM OOM | `itertools.cycle(dataloader)` 가 배치를 전부 캐싱 | 캐싱 없는 cycle |
+| RAM cascade OOM | 고아 프로세스(PPID=1)가 shmem 점유 | watchdog 자동 kill |
+| eval 0 % | `train_expert_only=false` 로 사전학습 VLM 파괴 | expert-only 유지 |
+| trace 무효 | trace 헤드를 얼린 VLM 에 부착 | 학습되는 expert 특징에 부착 |
+| **eval 전면 0 %** | **`postprocessor_overrides` 누락 → action 을 base(SO-100) stats 로 역정규화** | `dataset.meta.stats` 로 override |
+
+상세·재현·스크립트: [`TRACE_AUG_rtx4070.md`](TRACE_AUG_rtx4070.md), `scripts/trace_aug/`, `results/trace_aug_results.txt`
