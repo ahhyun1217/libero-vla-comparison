@@ -290,17 +290,17 @@ bash scripts/compare3.sh
 - 부착: SmolVLA action expert 특징(`action_out_proj` 입력) → 미래 16 frame trace 예측 헤드
 - 학습: expert-only, 12k step, `libero_spatial` 432 episode. `trace_weight=1` 이 treatment, `0` 이 control (동일 설정 매칭 비교)
 
-### 결과 (`libero_spatial`, 100 episode)
+### 결과 (`libero_spatial`, 300 episode, SE ±2.9 %p)
 
 | 조건 | trace-aug | control | Δ |
 |---|---:|---:|---:|
-| in-distribution | 49 % | 50 % | **−1 %p** |
-| OOD (init state 이동) | 46 % | 49 % | **−3 %p** |
+| in-distribution | 47.0 % | 48.3 % | **−1.3 %p** |
+| OOD (init state 이동) | 49.0 % | 51.7 % | **−2.7 %p** |
 
-같은 조건 n=300 재평가에서도 in-dist 는 **47.0 % vs 48.3 %** (Δ −1.3 %p) 로 동일함.
+예비 100 episode 측정도 −1 %p / −3 %p 로 방향 동일함.
 
-- **trace 후처리 효과 미검출.** 두 조건 모두 trace-aug 가 control 을 넘지 못함
-- 차이는 전부 n=100 표본 노이즈(SE ±5 %p) 안 → 통계적으로 0 과 구분되지 않음
+- **trace 후처리 효과 미검출.** 4개 측정(2조건 × 2 표본크기) 모두 trace-aug 가 control 을 못 넘음
+- 차이는 전부 표본 노이즈(n=300 기준 SE ±2.9 %p) 안 → 통계적으로 0 과 구분되지 않음
 - 참고선: `smolvla_libero`(공식) 66 %, lerobot 표준 재현(20k) 58 %
 
 → 본편 결론 **"후처리 기법보다 모델 선택이 중요"** 를 한 번 더 지지함.
