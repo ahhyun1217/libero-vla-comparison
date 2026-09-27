@@ -279,3 +279,23 @@ bash scripts/compare3.sh
 - X-VLA 만 `control_mode=absolute` 를 씀. 정책 특성이라 맞출 수 없는 차이
 - EMA 와 temporal ensemble 결과는 구현이 실제로 적용되었는지 검증하지 않았음
 - GR00T 와 Pi0.5 는 표에 없음. 둘 다 시도했고 막힌 지점은 위에 적어두었음
+
+---
+
+## 부록: trace-augmentation 실험 (RTX 4070 Ti Super, 별도 머신)
+
+두 번째 머신(RTX 4070 Ti Super)에서 진행한 **후처리 기법 추가 검증**. 상세: [`TRACE_AUG_rtx4070.md`](TRACE_AUG_rtx4070.md), 스크립트 `scripts/trace_aug/`, 수치 `results/trace_aug_results.txt`.
+
+**가설**: SmolVLA에 "미래 2D 궤적(point-trace) 예측"을 보조 목적으로 학습시키면(거대 world-model 없이 dynamics 감각 주입 = ATM/MolmoAct trace의 경량판) 성능/일반화가 오르는가. trace 라벨은 CoTracker3로 생성, action expert 특징에 보조 헤드 부착.
+
+**결과** (libero_spatial, n=100):
+
+| 모델 | in-dist | OOD(init_states shift) |
+|---|---:|---:|
+| trace_aug (expert-only + trace, 12k) | 49% | 46% |
+| control (expert-only, no-trace, 12k) | 50% | 49% |
+| **Δ (trace − control)** | **−1%p** | **−3%p** |
+
+**결론**: 이 셋업(오프라인·12k·spatial·단일 시드)에선 **trace 후처리 효과 미검출**(n=100 노이즈 내). → 이 repo의 핵심 결론 *"후처리 기법보다 모델 선택이 중요"* 를 한 번 더 보강. 오프라인 trace는 covariate shift(오차누적)를 근본적으로 못 잡음이 원인으로 보이며, 진짜 검증엔 on-policy(DAgger+trace)/강한 OOD/다중 시드가 필요.
+
+(재현 시 실제로 겪은 버그 5개 — itertools.cycle RAM 누수, 고아 프로세스 OOM, train_expert_only=false로 VLM 파괴, trace 부착 위치, **postprocessor_overrides 누락으로 인한 eval 전면 0%** — 은 `TRACE_AUG_rtx4070.md` 참고.)

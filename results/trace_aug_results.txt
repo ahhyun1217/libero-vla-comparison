@@ -1,0 +1,11 @@
+=== libero_spatial / n=10~30/task / SmolVLA expert-only 12k step / RTX 4070 Ti Super ===
+[참조] smolvla_libero (공식)         | 성공률 66.0% | n=100
+[참조] baseline-repro (lerobot표준 20k)| 성공률 58.0% (@5k 14.0%) | n=100
+[in-dist]
+trace_aug (expert-only + trace)      | 성공률 49.0% | n=100  (n=300 재평가: 47.0%)
+control   (expert-only, no-trace)    | 성공률 50.0% | n=100
+[OOD: init_states=false 분포이동]
+trace_aug                            | 성공률 46.0% | n=100
+control                              | 성공률 49.0% | n=100
+--- Δ(trace-control): in-dist -1%p, OOD -3%p → trace 후처리 효과 미검출(노이즈 내) ---
+=== 완료 ===
