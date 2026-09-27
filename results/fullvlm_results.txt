@@ -1,0 +1,3 @@
+=== libero_10 task6 / seed=1000 / 50 episode / n_action_steps=10 ===
+smolvla_VLM학습    | 성공률 57.99999999999999%
+=== 완료 18:34:53 ===

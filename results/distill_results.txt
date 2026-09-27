@@ -1,0 +1,4 @@
+=== libero_10 task6 / seed=1000 / 10 episode / n_action_steps=10 ===
+smolvla_원본     | 성공률   50.0% | VRAM   2280 MiB |  125s
+smolvla_증류     | 성공률   60.0% | VRAM   2280 MiB |  116s
+=== 완료 ===

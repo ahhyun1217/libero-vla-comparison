@@ -1,0 +1,7 @@
+=== SmolVLA / libero_10 task6 / seed=1000 / 50 episode ===
+DAgger 가중치=일반 | 성공률 57.99999999999999%
+DAgger 가중치=EMA   | 성공률    0.0%
+=== ACT 100k / libero_goal task0 / seed=1000 / 50 episode ===
+temporal_ens=off       | 성공률  100.0% | 에피당    2.1s
+temporal_ens=0.01      | 성공률   82.0% | 에피당    3.1s
+=== 완료 05:15:37 ===
