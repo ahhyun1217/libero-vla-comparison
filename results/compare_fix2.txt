@@ -1,0 +1,8 @@
+=== Pi0.5 / GR00T (HF 공식 bf16) / seed=1000 / n_action_steps=10 / 10과제x2ep ===
+pi05      | libero_goal    | 성공률    ERR% | VRAM   9417 MiB |  187s
+pi05      | libero_spatial | 성공률    ERR% | VRAM     39 MiB |   79s
+pi05      | libero_object  | 성공률    ERR% | VRAM     39 MiB |   90s
+groot     | libero_goal    | 성공률    ERR% | VRAM     39 MiB |    9s
+groot     | libero_spatial | 성공률    ERR% | VRAM     39 MiB |    5s
+groot     | libero_object  | 성공률    ERR% | VRAM     39 MiB |    5s
+=== 완료 ===

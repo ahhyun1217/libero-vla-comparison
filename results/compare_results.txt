@@ -1,0 +1,4 @@
+=== 조건: libero_goal / seed=1000 / n_action_steps=10 / n_episodes=2 ===
+smolvla      | 성공률   90.0% | 에피소드  20 | 에피당    4.5s | VRAM peak   1975 MiB | 총 109s
+molmoact2    | 성공률  100.0% | 에피소드  20 | 에피당    6.1s | VRAM peak  13879 MiB | 총 301s
+=== 완료 ===

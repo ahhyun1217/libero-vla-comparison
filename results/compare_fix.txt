@@ -1,0 +1,9 @@
+=== 수정 재실행 / seed=1000 / n_action_steps=10 / 10과제x2ep ===
+smolvla   | libero_10      | 성공률   70.0% | VRAM   2428 MiB |  221s
+groot     | libero_goal    | 성공률    ERR% | VRAM   6571 MiB |   27s
+groot     | libero_spatial | 성공률    ERR% | VRAM   6575 MiB |   33s
+groot     | libero_object  | 성공률    ERR% | VRAM   6571 MiB |   35s
+pi05      | libero_goal    | 성공률    ERR% | VRAM     39 MiB |   11s
+pi05      | libero_spatial | 성공률    ERR% | VRAM     39 MiB |    4s
+pi05      | libero_object  | 성공률    ERR% | VRAM     39 MiB |    5s
+=== 완료 ===

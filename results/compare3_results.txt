@@ -1,0 +1,6 @@
+=== 과제: libero_goal task0 (open the middle drawer) / seed=1000 / 10ep ===
+act         | 성공률   50.0% | 에피소드  10 | 에피당    4.2s | VRAM peak   1283 MiB | 총 49s
+smolvla     | 성공률  100.0% | 에피소드  10 | 에피당    4.1s | VRAM peak   1975 MiB | 총 59s
+molmoact2   | 성공률   90.0% | 에피소드  10 | 에피당    6.5s | VRAM peak  13541 MiB | 총 253s
+=== 완료 ===
+act-100k    | 성공률  100.0% | 에피소드  10 | 에피당    2.7s | VRAM peak   1283 MiB | 총 36s

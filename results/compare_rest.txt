@@ -1,0 +1,12 @@
+=== 재실행 + GR00T/Pi0.5 / seed=1000 / n_action_steps=10 ===
+molmoact2   | libero_object  | 성공률  100.0% | VRAM  13803 MiB |  389s
+smolvla     | libero_10      | 성공률    ERR% | VRAM     39 MiB |   21s
+molmoact2   | libero_10      | 성공률   95.0% | VRAM  14202 MiB |  430s
+groot       | libero_goal    | 성공률    ERR% | VRAM     39 MiB |   10s
+groot       | libero_spatial | 성공률    ERR% | VRAM     39 MiB |    5s
+groot       | libero_object  | 성공률    ERR% | VRAM     39 MiB |    5s
+pi05        | libero_goal    | 성공률    ERR% | VRAM     39 MiB |   77s
+pi05        | libero_spatial | 성공률    ERR% | VRAM     39 MiB |   90s
+pi05        | libero_object  | 성공률    ERR% | VRAM     39 MiB |   80s
+act-100k    | goal task1     | 성공률    0.0% | (학습 안 한 과제=제로샷)
+=== 완료 ===

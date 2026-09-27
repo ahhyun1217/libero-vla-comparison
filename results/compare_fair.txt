@@ -1,0 +1,4 @@
+=== 완전 동일조건: libero_goal task0 / seed=1000 / 10ep / n_action_steps=10 ===
+act-20k     | 성공률   60.0% | 에피당    3.6s | VRAM peak   1283 MiB | 총 41s
+act-100k    | 성공률  100.0% | 에피당    2.7s | VRAM peak   1283 MiB | 총 32s
+=== 완료 ===

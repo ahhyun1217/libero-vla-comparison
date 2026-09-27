@@ -1,0 +1,9 @@
+=== suite 비교 / seed=1000 / n_action_steps=10 / 과제10종x2ep ===
+smolvla    | libero_spatial | 성공률   80.0% | VRAM   2044 MiB |  129s
+molmoact2  | libero_spatial | 성공률  100.0% | VRAM  13946 MiB |  324s
+smolvla    | libero_object  | 성공률   95.0% | VRAM   1985 MiB |  117s
+molmoact2  | libero_object  | 성공률    ERR% | VRAM     39 MiB |    4s
+smolvla    | libero_10      | 성공률    ERR% | VRAM     39 MiB |    5s
+molmoact2  | libero_10      | 성공률    ERR% | VRAM     39 MiB |    4s
+act-100k   | goal task1     | 성공률    ERR% | (학습 안 한 과제)
+=== 완료 ===
