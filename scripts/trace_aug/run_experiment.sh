@@ -1,37 +1,32 @@
 #!/bin/bash
-source /home/user/amber/vla_wam/common/env.sh
-cd /home/user/amber/vla_wam
-LOG=logs/experiment.log
-STEPS=12000
-TR=/home/user/amber/vla_wam/trackB_pointtrace/train_trace_out
-CT=/home/user/amber/vla_wam/trackB_pointtrace/train_ctrl_out
-echo "[exp] START $(date) steps=$STEPS" > $LOG
+# trace-aug 실험 본체.
+#
+# treatment(trace_weight=1.0) 와 control(trace_weight=0.0) 을 동일 설정으로 연달아 학습하고
+# 각각 짧게 eval 함. 두 arm 의 차이는 trace_weight 하나뿐인 matched comparison 임.
+# 최종 수치는 여기가 아니라 tight_eval.sh (조건당 300 episode) 쪽임.
+set -u
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$HERE/env.sh"
+source "$HERE/eval_lib.sh"
+mkdir -p "$LOG_DIR"
 
-run_eval () { # ckpt_parent, evaldir, tag
-  CK=$1/checkpoints/last/pretrained_model
-  if [ ! -f "$CK/model.safetensors" ]; then
-     echo "[exp] !! $3: NO checkpoint at $CK -> skip eval (training likely crashed)" >> $LOG
-     return 1
-  fi
-  echo "[exp] EVAL $3: $CK -> $2  $(date)" >> $LOG
-  rm -rf $2
-  env PYTORCH_ALLOC_CONF=expandable_segments:True MUJOCO_GL=egl LIBERO_CONFIG_PATH=$LIBERO_CONFIG_PATH \
-    $PY -m lerobot.scripts.lerobot_eval --policy.path=$CK --policy.device=cuda \
-    --env.type=libero --env.task=libero_spatial --eval.n_episodes=10 --eval.batch_size=1 \
-    --output_dir=$2 >> logs/eval_$3.log 2>&1
-  $PY -c "import json;d=json.load(open('$2/eval_info.json'));print('[exp] RESULT $3 pc_success:',d['overall']['pc_success'],'n=',d['overall']['n_episodes'])" >> $LOG 2>&1
-}
+STEPS="${STEPS:-12000}"
+LOG="$LOG_DIR/experiment.log"
+echo "[exp] START $(date) steps=$STEPS" > "$LOG"
 
-echo "[exp] === TRAIN treatment (trace_weight=1.0) $(date) ===" >> $LOG
-rm -rf $TR
-$PY trackB_pointtrace/train_trace.py 1.0 $TR $STEPS >> logs/train_trace.log 2>&1
-run_eval $TR logs/eval_trace_aug trace_aug
+# tag / trace_weight / 출력 디렉터리
+ARMS=(
+  "trace_aug 1.0 $TRACK_B/train_trace_out"
+  "ctrl      0.0 $TRACK_B/train_ctrl_out"
+)
 
-echo "[exp] === TRAIN control (trace_weight=0.0) $(date) ===" >> $LOG
-rm -rf $CT
-$PY trackB_pointtrace/train_trace.py 0.0 $CT $STEPS >> logs/train_ctrl.log 2>&1
-run_eval $CT logs/eval_ctrl ctrl
+for arm in "${ARMS[@]}"; do
+  read -r TAG WEIGHT OUT <<< "$arm"
+  echo "[exp] === TRAIN $TAG (trace_weight=$WEIGHT) $(date) ===" >> "$LOG"
+  rm -rf "$OUT"
+  "$PY" "$HERE/train_trace.py" "$WEIGHT" "$OUT" "$STEPS" > "$LOG_DIR/train_$TAG.log" 2>&1
+  trace_eval "$TAG" "$OUT" 10 true "$LOG"
+done
 
-echo "[exp] ALL DONE $(date)" >> $LOG
-echo "[exp] ===== SUMMARY =====" >> $LOG
-grep "RESULT" $LOG >> $LOG
+echo "[exp] ALL DONE $(date)" >> "$LOG"
+grep "RESULT" "$LOG" | sed 's/^/[exp] SUMMARY /' >> "$LOG"

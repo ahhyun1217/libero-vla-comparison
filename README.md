@@ -284,7 +284,7 @@ bash scripts/compare3.sh
 
 ## 부록: trace-augmentation (별도 머신, RTX 4070 Ti Super)
 
-본편(RTX 5070 Ti)의 "후처리로 작은 모델을 키울 수 있는가" 질문을 두 번째 머신에서 **한 축 더** 검증함. 여기서 시도한 후처리는 **trace-augmentation** — SmolVLA 에 "미래 2D 궤적(point-trace) 예측"을 보조 손실로 추가해 dynamics 감각을 주입하는 방식 (거대 world-model 없이 ATM/MolmoAct 의 trace 아이디어만 경량화).
+본편(RTX 5070 Ti)의 "후처리로 작은 모델을 키울 수 있는가" 질문을 두 번째 머신에서 **한 축 더** 검증함. 여기서 시도한 후처리는 **trace-augmentation** 임. SmolVLA 에 "미래 2D 궤적(point-trace) 예측"을 보조 손실로 추가해 dynamics 감각을 주입하는 방식 (거대 world-model 없이 ATM/MolmoAct 의 trace 아이디어만 경량화).
 
 - 라벨: **CoTracker3** 로 agentview 영상에서 100점 격자의 미래 궤적 추출
 - 부착: SmolVLA action expert 특징(`action_out_proj` 입력) → 미래 16 frame trace 예측 헤드
@@ -307,7 +307,7 @@ bash scripts/compare3.sh
 
 ### 왜 안 나왔나 (추정)
 
-- 이 trace 는 **오프라인**이라 covariate shift(오차 누적)를 근본적으로 못 잡음 — 오프라인 증류가 큰 이득을 못 준 본편 결과와 같은 맥락
+- 이 trace 는 **오프라인**이라 covariate shift(오차 누적)를 근본적으로 못 잡음. 오프라인 증류가 큰 이득을 못 준 본편 결과와 같은 맥락
 - CoTracker 격자점은 "의미 있는 계획"이 아니라 기하학적 점이라 신호가 약했을 수 있음
 - 진짜 검증에는 **on-policy(DAgger+trace) · 강한 OOD(LIBERO-Plus / 교차 suite) · 다중 시드**가 필요
 

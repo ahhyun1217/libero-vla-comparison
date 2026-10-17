@@ -14,7 +14,7 @@ Output per episode: data_cache/traces/ep_{idx:06d}.npz
   + episode_index, task_index, W, H, grid_size
 
 GPU inference ~2-4GB, NO EGL/sim (safe alongside other GPU work if VRAM available).
-Everything stays under amber/vla_wam.
+경로는 argparse 로 지정함. 기본 출력은 이 스크립트 기준 ../data_cache/traces 임.
 """
 import argparse, os
 import numpy as np

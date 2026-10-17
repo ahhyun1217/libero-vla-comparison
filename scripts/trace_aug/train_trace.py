@@ -1,20 +1,22 @@
 #!/usr/bin/env python
 """
-Track B — trace-augmented SmolVLA training (custom loop reusing lerobot infra).
+Track B: trace-augmented SmolVLA training (lerobot 인프라를 재사용한 커스텀 루프).
 
-Adds an auxiliary head that predicts the future 2D point-trace (ATM/MolmoAct-style)
-from the shared VLM image features, so the trace loss shapes the (trainable) scene
-representation the action expert consumes.
+미래 2D point-trace (ATM/MolmoAct 계열) 를 예측하는 보조 헤드를 붙여, trace loss 가
+action expert 의 표현을 함께 다듬도록 함.
 
-Same script runs both arms for a matched comparison:
-  trace_weight=1.0  -> treatment (action loss + trace loss)
-  trace_weight=0.0  -> control   (pure baseline, identical config)
+같은 스크립트로 두 arm 을 돌려 matched comparison 을 만듦:
+  trace_weight=1.0  treatment (action loss + trace loss)
+  trace_weight=0.0  control   (동일 설정, trace 항만 0)
 
-Config note: train_expert_only=false so the connector is trainable (otherwise the
-trace head would only probe frozen features and change nothing).
+설정 주의:
+  train_expert_only=true 를 유지함. false 로 두면 사전학습 VLM 이 망가져 eval 이 0 % 가 됨.
+  그래서 trace 헤드는 얼어 있는 VLM 이 아니라 학습되는 expert 특징에 붙임
+  (얼린 쪽에 붙이면 gradient 가 흐르지 않는 무효 probe 가 됨).
 
-Usage: python train_trace.py <trace_weight> <output_dir> [steps]
-Everything stays under amber/vla_wam.
+경로는 VLA_WAM 환경변수로 override 가능함. 기본값은 이 실험을 돌렸던 머신 경로임.
+
+사용: python train_trace.py <trace_weight> <output_dir> [steps]
 """
 import sys, os, glob, json
 import numpy as np
@@ -32,12 +34,13 @@ def cycle(iterable):
         except StopIteration:
             it = iter(iterable)
 
-ROOT = "/home/user/amber/vla_wam"
+ROOT     = os.environ.get("VLA_WAM", "/home/user/amber/vla_wam")
+TRACK_B  = os.environ.get("TRACK_B", f"{ROOT}/trackB_pointtrace")
 os.environ.setdefault("LIBERO_CONFIG_PATH", f"{ROOT}/.libero")
 os.environ.setdefault("PYTORCH_ALLOC_CONF", "expandable_segments:True")
 
 TRACE_WEIGHT = float(sys.argv[1]) if len(sys.argv) > 1 else 1.0
-OUTPUT_DIR   = sys.argv[2] if len(sys.argv) > 2 else f"{ROOT}/trackB_pointtrace/train_trace_out"
+OUTPUT_DIR   = sys.argv[2] if len(sys.argv) > 2 else f"{TRACK_B}/train_trace_out"
 STEPS        = int(sys.argv[3]) if len(sys.argv) > 3 else 20000
 H_HORIZON    = 16          # future frames to predict
 IMG_SIZE     = 256.0       # trace pixel normalization
@@ -52,7 +55,16 @@ from lerobot.policies.factory import make_policy, make_pre_post_processors
 from lerobot.optim.factory import make_optimizer_and_scheduler
 from lerobot.utils.train_utils import save_checkpoint, update_last_checkpoint, get_step_checkpoint_dir
 
-eps = json.load(open(f"{ROOT}/trackB_pointtrace/spatial_episodes.json"))
+# lerobot/libero 전체에서 libero_spatial 에 해당하는 episode index 목록 (432 개).
+# 이 저장소에는 포함돼 있지 않음. 없으면 어떤 파일인지 모른 채 죽으므로 먼저 안내함.
+EPISODES_JSON = os.environ.get("EPISODES_JSON", f"{TRACK_B}/spatial_episodes.json")
+if not os.path.exists(EPISODES_JSON):
+    raise SystemExit(
+        f"episode 목록이 없음: {EPISODES_JSON}\n"
+        "lerobot/libero 에서 libero_spatial episode index 만 골라 담은 JSON 배열이 필요함.\n"
+        "EPISODES_JSON 으로 다른 경로를 지정할 수 있음."
+    )
+eps = json.load(open(EPISODES_JSON))
 eps_arg = "[" + ",".join(str(e) for e in sorted(eps)) + "]"
 
 cli = [
@@ -68,7 +80,6 @@ cli = [
     f"--batch_size={BATCH}",
     f"--steps={STEPS}",
     f"--save_freq={SAVE_FREQ}",
-    "--num_workers=4",
     f"--output_dir={OUTPUT_DIR}",
 ]
 cfg = draccus.parse(TrainPipelineConfig, args=cli)
@@ -137,11 +148,14 @@ _feat = {}
 policy.model.action_out_proj.register_forward_pre_hook(lambda m, inp: _feat.__setitem__("x", inp[0]))
 
 trace_head = None
-# num_workers=0: the worker processes leak /dev/shm via video-frame tensors
-# (prior runs climbed to 8-21GB shmem -> OOM-killed). Loading in the main process
-# eliminates the shared-memory path entirely. Slightly slower, but leak-proof.
+# 학습 루프를 직접 돌리므로 cfg.num_workers 는 쓰이지 않음. 실제로 적용되는 건 여기임.
+# worker 프로세스가 video frame tensor 로 /dev/shm 을 새게 해서 예전 실행이 8-21GB 까지
+# 올라간 뒤 OOM 으로 죽었음. 2 로 낮추고 pin_memory 를 끄면 안정적이었음.
+# 그래도 새면 DL_WORKERS=0 으로 공유메모리 경로를 아예 없앨 수 있음 (느려짐).
+DL_WORKERS = int(os.environ.get("DL_WORKERS", "2"))
 loader = torch.utils.data.DataLoader(dataset, batch_size=BATCH, shuffle=True,
-                                     num_workers=2, prefetch_factor=2,
+                                     num_workers=DL_WORKERS,
+                                     prefetch_factor=2 if DL_WORKERS else None,
                                      pin_memory=False, drop_last=True)
 
 step = 0
